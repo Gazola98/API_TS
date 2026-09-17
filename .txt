@@ -1,0 +1,32 @@
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    usuario VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    profissao VARCHAR(50),
+    cidade VARCHAR(50),
+    pais VARCHAR(50)
+);
+
+INSERT INTO usuarios (usuario, email, profissao, cidade, pais) VALUES
+('ana_silva', 'ana.silva@email.com', 'Desenvolvedora Backend', 'São Paulo', 'Brasil'),
+('carlos_dev', 'carlos.oliveira@email.com', 'Engenheiro de Software', 'Lisboa', 'Portugal'),
+('marta_designer', 'marta.souza@email.com', 'UX/UI Designer', 'Rio de Janeiro', 'Brasil'),
+('john_doe', 'john.doe@email.com', 'Analista de Dados', 'Nova York', 'Estados Unidos'),
+('lucas_tech', 'lucas.mendes@email.com', 'DevOps Engineer', 'Porto', 'Portugal'),
+('sofia_m', 'sofia.martinez@email.com', 'Gerente de Projetos', 'Madri', 'Espanha'),
+('beatriz_p', 'beatriz.pereira@email.com', 'Desenvolvedora Frontend', 'Curitiba', 'Brasil'),
+('liam_smith', 'liam.smith@email.com', 'Engenheiro de QA', 'Londres', 'Reino Unido'),
+('felipe_alfa', 'felipe.costa@email.com', 'Arquiteto de Soluções', 'Belo Horizonte', 'Brasil'),
+('clara_v', 'clara.valdez@email.com', 'Cientista de Dados', 'Buenos Aires', 'Argentina');
+
+############ CRIAR BANCO ANTES DE TESTAR A API ############
+
+.env base
+PORT= sua porta
+
+#access db
+DB_HOST= seuHost
+DB_PORT=suaPorta
+DB_USER=seuUsuario
+DB_PASSWORD=suaSenha
+DB_DATABASE=nomeDaSuaDatabase
