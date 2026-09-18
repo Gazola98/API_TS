@@ -1,11 +1,20 @@
-import { pool } from '../config/db';
-import { buscarUsuarioPorId as buscarUsuarioPorIdRepository, 
+import {buscarTodosUsuarios as buscarTodosUsuarios, 
+        buscarUsuarioPorId as buscarUsuarioPorIdRepository, 
+        buscarUsuarioPorEmail as buscarUsuarioPorEmailRepository,
+        buscarUsuarioPorEmailIgnorandoId as buscarUsuarioPorEmailIgnorandoIdRepository,
         criarUsuario as criarUsuarioRepository, 
         atualizarUsuario as atualizarUsuarioRepository,
         atualizarParcialmenteUsuario as atualizarParcialmenteUsuarioRepository,
         deletarUsuario as deletarUsuarioRepository
     } from '../repositories/usuarioRepository';
 
+
+export async function buscarUsuarios() {
+
+    const usuariosExistentes = await buscarTodosUsuarios();
+
+    return usuariosExistentes;
+}
 
 export async function criarUsuario(
     usuario: string,
@@ -14,6 +23,12 @@ export async function criarUsuario(
     cidade: string,
     pais: string
 ) {
+    const usuarioExistente = await buscarUsuarioPorEmailRepository(email);
+
+    if(usuarioExistente) {
+        throw new Error('EMAIL_JA_CADASTRADO');
+    }
+
     const usuarioCriado = await criarUsuarioRepository(
         usuario,
         email,
@@ -39,6 +54,12 @@ export async function atualizarUsuario(
     cidade: string,
     pais: string
 ) {
+    const usuarioComEmail = await buscarUsuarioPorEmailIgnorandoIdRepository(email, id);
+
+    if(usuarioComEmail) {
+        throw new Error('EMAIL_JA_CADASTRADO');
+    }
+
     const usuarioAtualizado = await atualizarUsuarioRepository(
         id,
         usuario,

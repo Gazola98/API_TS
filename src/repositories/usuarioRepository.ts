@@ -1,9 +1,35 @@
 import { pool } from "../config/db";
 
+export async function buscarTodosUsuarios() {
+    const result = await pool.query(
+        'SELECT * FROM usuarios'
+    );
+
+    return result.rows ?? null;
+}
+
 export async function buscarUsuarioPorId(id: number) {
     const result = await pool.query(
         'SELECT * FROM usuarios WHERE id = $1',
         [id]
+    );
+
+    return result.rows[0] ?? null;
+}
+
+export async function buscarUsuarioPorEmail(email: string) {
+    const result = await pool.query(
+        'SELECT * FROM usuarios WHERE email = $1', [email]
+    );
+
+    return result.rows[0] ?? null;
+}
+
+export async function buscarUsuarioPorEmailIgnorandoId(email: string, id: number) {
+    const result = await pool.query(
+        `SELECT * FROM usuarios 
+        WHERE email = $1
+        AND id <> $2`, [email, id]
     );
 
     return result.rows[0] ?? null;

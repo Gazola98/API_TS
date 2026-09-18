@@ -1,12 +1,28 @@
 import { Request, Response, NextFunction } from 'express';
-import { pool } from '../config/db'
 
+import { buscarUsuarios as buscarTodosUsuarios } from '../services/usuarioService';
 import { criarUsuario as criarUsuarioService } from '../services/usuarioService';
 import { buscarUsuarioPorId as buscarUsuarioPorIdService } from '../services/usuarioService';
 import { atualizarUsuario as atualizarUsuarioService } from '../services/usuarioService';
 import { deletarUsuario as deletarUsuarioService } from '../services/usuarioService';
 import { atualizarParcialmenteUsuario as atualizarParcialmenteUsuarioService } from '../services/usuarioService';
 
+
+export async function buscarGeral(req: Request, res: Response, next: NextFunction) {
+    try {
+        const usuarios = await buscarTodosUsuarios();
+        if(!usuarios) {
+            return res.status(404).json({
+                erro: 'Usuarios não encontrados'
+            });
+        }
+
+        res.status(200).json(usuarios);
+    } catch (error) {
+        next(error);
+    }
+
+}
 export async function buscarUsuarioPorId(
     req: Request,
     res: Response,

@@ -14,6 +14,12 @@ export function errorHandler(
         });
     }
 
+    if(error.message === 'EMAIL_JA_CADASTRADO') {
+        return res.status(404).json({
+            erro: 'Este email já está cadastrado!'
+        });
+    }
+
     res.status(500).json({
         erro: 'Erro interno no servidor!'
     });
