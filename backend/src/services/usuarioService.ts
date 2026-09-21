@@ -77,6 +77,18 @@ export async function atualizarParcialmenteUsuario(
     campos: string[],
     valores: string[]
 ) {
+    const indiceEmail = campos.indexOf('email');
+
+    if(indiceEmail !== -1) {
+        const email = valores[indiceEmail];
+
+        const usuarioComEmail = await buscarUsuarioPorEmailIgnorandoIdRepository(email, id);
+
+        if(usuarioComEmail) {
+            throw new Error('EMAIL_JA_CADASTRADO');
+        }
+    }
+    
     const usuarioAtualizado = await atualizarParcialmenteUsuarioRepository(
         id,
         campos,
