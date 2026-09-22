@@ -1,17 +1,23 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { Usuario } from "./types/Usuario";
 
+import UsuarioTable from "./components/UsuarioTable";
+import UsuarioForm from "./components/UsuarioForm";
+
+import {
+  buscarUsuarios,
+  criarUsuario,
+  atualizarUsuario,
+  excluirUsuario,
+} from "./services/usuarioService";
+
 function App() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [carregando, setCarregando] = useState(true);
-
-  // Erros
-  const [erro, setErro] = useState<string | null>(null);
-  const [erroDelete, setErroDelete] = useState<string | null>(null);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [modalAberto, setModalAberto] = useState(false);
   const [deletandoId, setDeletandoId] = useState<number | null>(null);
-  const [erroCadastro, setErroCadastro] = useState<string | null>(null);
 
-  // estados do formulário
+  // Estados do formulário
   const [usuario, setUsuario] = useState("");
   const [email, setEmail] = useState("");
   const [profissao, setProfissao] = useState("");
@@ -19,45 +25,30 @@ function App() {
   const [pais, setPais] = useState("");
 
   useEffect(() => {
-    async function buscarUsuarios() {
+    async function carregarUsuarios() {
       try {
-        const response = await fetch("http://localhost:3000/api/usuarios");
-
-        if (!response.ok) {
-          throw new Error("Erro ao buscar usuários");
-        }
-
-        const dados: Usuario[] = await response.json();
+        const dados = await buscarUsuarios();
 
         setUsuarios(dados);
       } catch (error) {
-        setErro("Não foi possível carregar os usuários.");
-      } finally {
-        setCarregando(false);
+        console.error("Erro ao carregar usuários:", error);
       }
     }
 
-    buscarUsuarios();
+    carregarUsuarios();
   }, []);
 
   async function deletarUsuario(id: number) {
-    setErroDelete(null);
     setDeletandoId(id);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao deletar usuário.");
-      }
+      await excluirUsuario(id);
 
       setUsuarios((usuariosAtuais) =>
         usuariosAtuais.filter((usuario) => usuario.id !== id),
       );
     } catch (error) {
-      setErroDelete("Não foi possível excluir o usuário.");
+      console.error("Erro ao excluir usuário:", error);
     } finally {
       setDeletandoId(null);
     }
@@ -65,8 +56,6 @@ function App() {
 
   async function cadastrarUsuario(event: FormEvent) {
     event.preventDefault();
-
-    setErroCadastro(null);
 
     try {
       const novoUsuario = {
@@ -77,142 +66,118 @@ function App() {
         pais,
       };
 
-      const response = await fetch("http://localhost:3000/api/usuarios", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(novoUsuario),
-      });
+      if (editandoId === null) {
+        const usuarioCriado = await criarUsuario(novoUsuario);
 
-      if (!response.ok) {
-        const erro = await response.json();
+        setUsuarios((usuariosAtuais) => [
+          ...usuariosAtuais,
+          usuarioCriado,
+        ]);
+      } else {
+        const usuarioAtualizado = await atualizarUsuario(
+          editandoId,
+          novoUsuario,
+        );
 
-        throw new Error(erro.message);
+        setUsuarios((usuariosAtuais) =>
+          usuariosAtuais.map((usuarioAtual) =>
+            usuarioAtual.id === usuarioAtualizado.id
+              ? usuarioAtualizado
+              : usuarioAtual,
+          ),
+        );
       }
 
-      const novoUsuarioCriado: Usuario = await response.json();
-
-      setUsuarios((usuariosAtuais) => [...usuariosAtuais, novoUsuarioCriado]);
-
-      setUsuario("");
-      setEmail("");
-      setProfissao("");
-      setCidade("");
-      setPais("");
+      limparFormulario();
+      setModalAberto(false);
     } catch (error) {
-      if (error instanceof Error) {
-        setErroCadastro(error.message);
-      }
+      console.error("Erro ao salvar usuário:", error);
     }
   }
 
+  function editarUsuario(usuario: Usuario) {
+    setEditandoId(usuario.id);
+
+    setUsuario(usuario.usuario);
+    setEmail(usuario.email);
+    setProfissao(usuario.profissao);
+    setCidade(usuario.cidade);
+    setPais(usuario.pais);
+
+    setModalAberto(true);
+  }
+
+  function limparFormulario() {
+    setUsuario("");
+    setEmail("");
+    setProfissao("");
+    setCidade("");
+    setPais("");
+    setEditandoId(null);
+  }
+
+  function cancelarEdicao() {
+    limparFormulario();
+    setModalAberto(false);
+  }
+
+  function abrirModalNovoUsuario() {
+    limparFormulario();
+    setModalAberto(true);
+  }
+
   return (
-    <div>
-      <h1>Usuários</h1>
+    <div className="min-h-screen bg-gray-200 px-4 py-8">
+      <div className="mx-auto max-w-7xl">
+        <h1 className="mb-8 p-4 text-3xl font-bold text-gray-700">
+          Usuários
+        </h1>
 
-      {carregando && <p>Carregando usuários...</p>}
+        <button
+          onClick={abrirModalNovoUsuario}
+          className="mb-6 rounded-lg bg-blue-600 px-5 py-2 font-medium text-white transition hover:bg-blue-700"
+        >
+          + Novo usuário
+        </button>
 
-      {erro && <p>{erro}</p>}
+        <UsuarioTable
+          usuarios={usuarios}
+          deletandoId={deletandoId}
+          deletarUsuario={deletarUsuario}
+          editarUsuario={editarUsuario}
+        />
 
-      {erroDelete && <p>{erroDelete}</p>}
+        {modalAberto && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+            <div className="relative w-full max-w-2xl">
+              <button
+                type="button"
+                onClick={cancelarEdicao}
+                className="absolute right-4 top-4 z-10 text-2xl font-bold text-gray-500 transition hover:text-gray-800"
+                aria-label="Fechar"
+              >
+                ×
+              </button>
 
-      {erroCadastro && <p>{erroCadastro}</p>}
-
-      <form onSubmit={cadastrarUsuario}>
-        <div>
-          <label>Usuário</label>
-          <input
-            type="text"
-            value={usuario}
-            onChange={(e) => setUsuario(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label>Profissão</label>
-          <input
-            type="text"
-            value={profissao}
-            onChange={(e) => setProfissao(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label>Cidade</label>
-          <input
-            type="text"
-            value={cidade}
-            onChange={(e) => setCidade(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label>País</label>
-          <input
-            type="text"
-            value={pais}
-            onChange={(e) => setPais(e.target.value)}
-          />
-        </div>
-
-        <button type="submit">Cadastrar</button>
-      </form>
-
-      {!carregando && !erro && (
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Usuário</th>
-              <th>Email</th>
-              <th>Profissão</th>
-              <th>Cidade</th>
-              <th>País</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {usuarios.map((usuario) => (
-              <tr key={usuario.id}>
-                <td>{usuario.id}</td>
-                <td>{usuario.usuario}</td>
-                <td>{usuario.email}</td>
-                <td>{usuario.profissao}</td>
-                <td>{usuario.cidade}</td>
-                <td>{usuario.pais}</td>
-
-                <td>
-                  <button
-                    disabled={deletandoId === usuario.id}
-                    onClick={() => {
-                      const confirmar = window.confirm(
-                        `Deseja realmente excluir o usuário ${usuario.usuario}?`,
-                      );
-
-                      if (confirmar) {
-                        deletarUsuario(usuario.id);
-                      }
-                    }}
-                  >
-                    {deletandoId === usuario.id ? "Excluindo..." : "Excluir"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+              <UsuarioForm
+                usuario={usuario}
+                email={email}
+                profissao={profissao}
+                cidade={cidade}
+                pais={pais}
+                setUsuario={setUsuario}
+                setEmail={setEmail}
+                setProfissao={setProfissao}
+                setCidade={setCidade}
+                setPais={setPais}
+                editandoId={editandoId}
+                cadastrarUsuario={cadastrarUsuario}
+                cancelarEdicao={cancelarEdicao}
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
